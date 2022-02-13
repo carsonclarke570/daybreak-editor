@@ -1,3 +1,5 @@
+use engine_core;
+
 fn main() {
-    println!("Hello, world!");
+    engine_core::test();
 }
