@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 winit = "0.26.1"
-ash = "0.35.1+1.2.203"
+ash = { version = "0.35.1+1.2.203", features = ["linked"] }
 figment = { version = "0.10", features = ["yaml", "env"] }
 serde_derive = "1.0.8"
 serde = "1.0.8"

@@ -1,3 +1,4 @@
+mod util;
 mod conf;
 mod vulkan;
 
