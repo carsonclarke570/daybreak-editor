@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 engine-core = { path = "../engine-core" }
+log = "0.4.14"
+simple_logger = "2.1.0"
+winit = "0.26.1"

@@ -1,0 +1,10 @@
+version: 100
+
+window:
+  title: "Default Project Name"
+  width: 800
+  height: 600
+  fullscreen: false
+
+vulkan: {}
+
