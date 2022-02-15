@@ -2,8 +2,8 @@ version: 100
 
 window:
   title: "Default Project Name"
-  width: 2000
-  height: 800
+  width: 800
+  height: 600
   fullscreen: false
 
 vulkan:
@@ -13,4 +13,3 @@ vulkan:
     engine_name: "Daybreak Engine"
     engine_version: 0
     api_version: [0, 1, 0]
-

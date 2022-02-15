@@ -1,6 +1,6 @@
-mod util;
-mod conf;
-mod vulkan;
+pub mod util;
+pub mod conf;
+pub mod vulkan;
 
 use std::path::Path;
 
@@ -35,7 +35,6 @@ impl Engine {
 
 pub fn test() {
     let engine: Engine = Engine::new("engine-core/config/".to_string());
-    let mut app = VulkanApp::new();
-    app.init(&engine.config);
+    let app = VulkanApp::new(&engine.config);
     app.run();
 }

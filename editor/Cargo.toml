@@ -7,6 +7,11 @@ edition = "2021"
 
 [dependencies]
 engine-core = { path = "../engine-core" }
-log = "0.4.14"
+figment = { version = "0.10", features = ["yaml", "env"] }
+serde_derive = "1.0.8"
+serde = "1.0.8"
+log = { version ="0.4.14", features = ["max_level_info", "release_max_level_info"] }
 simple_logger = "2.1.0"
 winit = "0.26.1"
+iced = "0.3"
+iced_native = "0.4"
