@@ -3,7 +3,9 @@ use ash::vk;
 use std::ffi::CString;
 use std::os::raw::c_char;
 
-use super::{VulkanInstance, VulkanPhysicalDevice, ENABLE_VALIDATION_LAYERS, REQUIRED_LAYERS};
+use crate::vulkan::QueueFamilyIndices;
+
+use super::{VulkanInstance, VulkanPhysicalDevice, ENABLE_VALIDATION_LAYERS, REQUIRED_LAYERS, VulkanSurface};
 
 pub struct VulkanLogicalDevice {
     logical_device: ash::Device,
@@ -11,8 +13,8 @@ pub struct VulkanLogicalDevice {
 }
 
 impl VulkanLogicalDevice {
-    pub fn new(instance: &VulkanInstance, physical_device: &VulkanPhysicalDevice) -> Self {
-        let (this_device, this_queue) = Self::create_logical_device(instance, physical_device);
+    pub fn new(instance: &VulkanInstance, physical_device: &VulkanPhysicalDevice, surface: &VulkanSurface) -> Self {
+        let (this_device, this_queue) = Self::create_logical_device(instance, physical_device, surface);
         VulkanLogicalDevice {
             logical_device: this_device,
             queue: this_queue,
@@ -30,8 +32,9 @@ impl VulkanLogicalDevice {
     fn create_logical_device(
         instance: &VulkanInstance,
         physical_device: &VulkanPhysicalDevice,
+        surface: &VulkanSurface
     ) -> (ash::Device, vk::Queue) {
-        let indices = VulkanPhysicalDevice::find_queue_index(instance, *physical_device.get());
+        let indices = QueueFamilyIndices::new(instance, surface, *physical_device.get());
 
         let queue_priorities = [1.0_f32];
         let queue_create_info = [vk::DeviceQueueCreateInfo::builder()

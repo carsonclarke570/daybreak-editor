@@ -5,7 +5,7 @@ use serde_derive::Deserialize;
 
 use crate::{conf::VulkanPhysicalDeviceConfig, util};
 
-use super::VulkanInstance;
+use super::{VulkanInstance, VulkanSurface};
 
 #[derive(Debug, Deserialize)]
 pub struct QueueFlagSupportMatrix {
@@ -63,17 +63,16 @@ pub struct QueueFamilyIndices {
     pub compute_family: Option<u32>,
     pub transfer_family: Option<u32>,
     pub sparse_family: Option<u32>,
+    pub present_family: Option<u32>,
 }
 
-
 impl QueueFamilyIndices {
-    pub fn new() -> Self {
-        QueueFamilyIndices {
-            graphics_family: None,
-            compute_family: None,
-            transfer_family: None,
-            sparse_family: None,
-        }
+    pub fn new(
+        instance: &VulkanInstance,
+        surface: &VulkanSurface,
+        vk_physical_device: vk::PhysicalDevice,
+    ) -> Self {
+        Self::create(instance, surface, vk_physical_device)
     }
 
     pub fn is_complete(&self, required_matrix: &QueueFlagSupportMatrix) -> bool {
@@ -81,6 +80,7 @@ impl QueueFamilyIndices {
             && self.is_part_complete(required_matrix.transfer, self.transfer_family)
             && self.is_part_complete(required_matrix.sparse, self.sparse_family)
             && self.is_part_complete(required_matrix.compute, self.compute_family)
+            && self.is_part_complete(true, self.present_family)
     }
 
     fn is_part_complete(&self, required: bool, optional: Option<u32>) -> bool {
@@ -91,15 +91,45 @@ impl QueueFamilyIndices {
         }
     }
 
-    pub fn mark_families(&mut self, support_matrix: &QueueFlagSupportMatrix, index: u32) {
-        self.graphics_family = self.mark_one(support_matrix.graphics, self.graphics_family, index);
-        self.compute_family = self.mark_one(support_matrix.compute, self.compute_family, index);
-        self.transfer_family = self.mark_one(support_matrix.transfer, self.transfer_family, index);
-        self.sparse_family = self.mark_one(support_matrix.sparse, self.sparse_family, index);
+    pub fn create(
+        instance: &VulkanInstance,
+        surface: &VulkanSurface,
+        vk_physical_device: vk::PhysicalDevice,
+    ) -> Self {
+        let queue_families = unsafe {
+            instance
+                .get()
+                .get_physical_device_queue_family_properties(vk_physical_device)
+        };
+        let mut indices = Self::default();
+        for (index, queue_family) in queue_families.iter().enumerate() {
+            let support_matrix = QueueFlagSupportMatrix::new(queue_family);
+            let idx = index as u32;
+            indices.graphics_family =
+                indices.mark_one(support_matrix.graphics, indices.graphics_family, idx);
+            indices.compute_family =
+                indices.mark_one(support_matrix.compute, indices.compute_family, idx);
+            indices.transfer_family =
+                indices.mark_one(support_matrix.transfer, indices.transfer_family, idx);
+            indices.sparse_family =
+                indices.mark_one(support_matrix.sparse, indices.sparse_family, idx);
+
+            let present_support = unsafe {
+                let result = surface.get_loader().get_physical_device_surface_support(
+                    vk_physical_device,
+                    idx,
+                    *surface.get_surface(),
+                );
+                result.unwrap()
+            };
+            indices.present_family = indices.mark_one(present_support, indices.present_family, idx);
+        }
+
+        indices
     }
 
-    fn mark_one(&self, required: bool, optional: Option<u32>, index: u32) -> Option<u32> {
-        if required {
+    fn mark_one(&self, is_available: bool, optional: Option<u32>, index: u32) -> Option<u32> {
+        if is_available {
             Some(index)
         } else {
             optional
@@ -112,9 +142,13 @@ pub struct VulkanPhysicalDevice {
 }
 
 impl VulkanPhysicalDevice {
-    pub fn new(instance: &VulkanInstance, config: &VulkanPhysicalDeviceConfig) -> Self {
+    pub fn new(
+        instance: &VulkanInstance,
+        surface: &VulkanSurface,
+        config: &VulkanPhysicalDeviceConfig,
+    ) -> Self {
         VulkanPhysicalDevice {
-            physical_device: Self::create_physical_device(instance, config),
+            physical_device: Self::create_physical_device(instance, surface, config),
         }
     }
 
@@ -124,6 +158,7 @@ impl VulkanPhysicalDevice {
 
     fn create_physical_device(
         instance: &VulkanInstance,
+        surface: &VulkanSurface,
         config: &VulkanPhysicalDeviceConfig,
     ) -> vk::PhysicalDevice {
         let physical_devices = unsafe {
@@ -139,28 +174,26 @@ impl VulkanPhysicalDevice {
             physical_devices.len()
         );
 
-        let mut result = None;
-        for &physical_device in physical_devices.iter() {
-            if Self::is_device_suitable(instance, physical_device, &config.desired_queue_flags)
-                && result.is_none()
-            {
-                result = Some(physical_device)
-            }
-        }
+        let result = physical_devices.iter().find(|device| {
+            Self::is_device_suitable(instance, **device, surface, &config.desired_queue_flags)
+        });
 
         match result {
             None => panic!("Failed to find a suitable GPU!"),
-            Some(physical_device) => 
-            { 
-                log::info!("Successfully initialized physical device with config: {:?}", config);
-                physical_device
-            },
+            Some(physical_device) => {
+                log::info!(
+                    "Successfully initialized physical device with config: {:?}",
+                    config
+                );
+                *physical_device
+            }
         }
     }
 
     fn is_device_suitable(
         instance: &VulkanInstance,
         vk_physical_device: vk::PhysicalDevice,
+        surface: &VulkanSurface,
         required_flags: &QueueFlagSupportMatrix,
     ) -> bool {
         let properties = unsafe {
@@ -220,24 +253,6 @@ impl VulkanPhysicalDevice {
         log::debug!("Device Feature Support - {}", device_matrix);
 
         log::debug!("Required - {:?}", required_flags);
-        VulkanPhysicalDevice::find_queue_index(instance, vk_physical_device).is_complete(required_flags)
-    }
-
-    pub fn find_queue_index(
-        instance: &VulkanInstance,
-        vk_physical_device: vk::PhysicalDevice,
-    ) -> QueueFamilyIndices {
-        let queue_families = unsafe {
-            instance
-                .get()
-                .get_physical_device_queue_family_properties(vk_physical_device)
-        };
-        let mut queue_family_indices = QueueFamilyIndices::new();
-        for (index, queue_family) in queue_families.iter().enumerate() {
-            let support_matrix = QueueFlagSupportMatrix::new(queue_family);
-            queue_family_indices.mark_families(&support_matrix, index.try_into().unwrap());
-        }
-
-        queue_family_indices
+        QueueFamilyIndices::new(instance, surface, vk_physical_device).is_complete(required_flags)
     }
 }
