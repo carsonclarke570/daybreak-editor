@@ -11,9 +11,19 @@ env:
 
 jobs:
   build:
-
+    name: Build & test project on ${{ matrix.os }} with ${{ matrix.compiler }}.
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        compiler: [ g++-10 ]
+        include:
+          - os: ubuntu-latest
+            target: Linux
+          - os: macos-latest
+            target: Macos
+          - os: windows-latest
+            target: Windows
     steps:
     - uses: actions/checkout@v2
     - name: Build
