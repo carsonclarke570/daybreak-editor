@@ -15,12 +15,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+#         os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest]
         include:
-          - os: ubuntu-latest
-            target: Linux
-          - os: macos-latest
-            target: Macos
+#           - os: ubuntu-latest
+#             target: Linux
+#           - os: macos-latest
+#             target: Macos
           - os: windows-latest
             target: Windows
     steps:
