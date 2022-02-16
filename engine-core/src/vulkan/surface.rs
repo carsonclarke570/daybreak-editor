@@ -44,7 +44,7 @@ impl VulkanSurface {
             result.unwrap()
         };
         let surface_loader = ash::extensions::khr::Surface::new(entry, instance.get());
-
+        log::info!("Successfully initialized surface");
         (surface_loader, surface)
     }
 }
