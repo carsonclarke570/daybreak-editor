@@ -6,13 +6,15 @@ use winit::window::Fullscreen;
 
 use crate::conf::{EngineConfig, WindowConfig};
 
-use super::{VulkanDebugUtil, VulkanInstance, REQUIRED_LAYERS};
+use super::{VulkanDebugUtil, VulkanInstance, VulkanPhysicalDevice, REQUIRED_LAYERS, VulkanLogicalDevice};
 
 pub struct VulkanApp {
     event_loop: EventLoop<()>,
     _window: winit::window::Window,
     _vk_instance: VulkanInstance,
     _vk_debug: VulkanDebugUtil,
+    _vk_phy_device: VulkanPhysicalDevice,
+    _vk_log_device: VulkanLogicalDevice
 }
 
 impl VulkanApp {
@@ -22,16 +24,17 @@ impl VulkanApp {
 
         let main_loop = EventLoop::new();
         let main_window = VulkanApp::init_window(&main_loop, &config.window);
-        log::info!("HERE");
         let instance = VulkanInstance::new(&entry, &config.vulkan.instance);
-        log::info!("HERE1");
         let debug_util = VulkanDebugUtil::new(&entry, &instance);
-        log::info!("HERE2");
+        let this_phys_device = VulkanPhysicalDevice::new(&instance, &config.vulkan.physical_device);
+        let this_log_device = VulkanLogicalDevice::new(&instance, &this_phys_device);
         VulkanApp {
             event_loop: main_loop,
             _window: main_window,
             _vk_instance: instance,
             _vk_debug: debug_util,
+            _vk_phy_device: this_phys_device,
+            _vk_log_device: this_log_device
         }
     }
 

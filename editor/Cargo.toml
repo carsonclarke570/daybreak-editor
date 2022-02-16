@@ -10,7 +10,7 @@ engine-core = { path = "../engine-core" }
 figment = { version = "0.10", features = ["yaml", "env"] }
 serde_derive = "1.0.8"
 serde = "1.0.8"
-log = { version ="0.4.14", features = ["max_level_info", "release_max_level_info"] }
+log = { version ="0.4.14", features = ["max_level_debug", "release_max_level_info"] }
 simple_logger = "2.1.0"
 winit = "0.26.1"
 iced = "0.3"

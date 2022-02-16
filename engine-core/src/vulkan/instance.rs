@@ -27,6 +27,7 @@ impl Drop for VulkanInstance {
         unsafe {
             self.instance.destroy_instance(None);
         }
+        log::debug!("Sucessfully destroyed instance")
     }
 }
 

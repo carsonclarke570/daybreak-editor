@@ -13,4 +13,13 @@ vulkan:
     engine_name: "Daybreak Engine"
     engine_version: 0
     api_version: [0, 1, 0]
+  physical_device:
+    desired_queue_flags:
+      graphics: true
+      compute: false
+      transfer: false
+      sparse: false
+    desired_device_features: 
+      geometry_shader: false
+
 

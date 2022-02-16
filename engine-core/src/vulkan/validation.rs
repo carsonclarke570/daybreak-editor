@@ -77,6 +77,7 @@ impl Drop for VulkanDebugUtil {
                 utils.destroy_debug_utils_messenger(messenger, None);
             }
         }
+        log::debug!("Sucessfully destroyed debug utils");
     }
 }
 
